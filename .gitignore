@@ -1,0 +1,42 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Caché de Python y archivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Datos de audio (evita subir el corpus crudo pesado al repositorio)
+data/raw/**/*.wav
+data/processed/
+
+# Pesos de modelos entrenados pesados (descomentar si deseas subir los .pt pequeños)
+models/*.pt
+models/*.pth
+models/*.onnx
+*.ckpt
+
+# Caché de HuggingFace / Wav2Vec2 / PyTorch
+.cache/
+huggingface_cache/
+
+# Empaquetado y distribución de escritorio (PyInstaller / build)
+build/
+dist/
+*.spec
+*.egg-info/
+.eggs/
+
+# Configuración local de Streamlit / IDEs / Sistema Operativo
+.streamlit/secrets.toml
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

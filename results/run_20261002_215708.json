@@ -1,0 +1,128 @@
+{
+  "audio_config": {
+    "sample_rate": 16000,
+    "n_mels": 40,
+    "win_length_ms": 20.0,
+    "overlap": 0.75,
+    "window_fn": "hann",
+    "win_length": 320,
+    "hop_length": 80,
+    "n_fft": 512
+  },
+  "model_config": {
+    "d_model": 64,
+    "nhead": 4,
+    "num_layers": 2,
+    "dim_feedforward": 128,
+    "dropout": 0.2,
+    "max_seq_len": 500
+  },
+  "train_config": {
+    "batch_size": 8,
+    "lr": 0.001,
+    "epochs": 50,
+    "k_folds": 5,
+    "seed": 42,
+    "device": "cuda"
+  },
+  "folds": [
+    {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "confusion_matrix": [
+        [
+          20,
+          0
+        ],
+        [
+          0,
+          20
+        ]
+      ]
+    },
+    {
+      "accuracy": 0.95,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526315,
+      "confusion_matrix": [
+        [
+          20,
+          0
+        ],
+        [
+          2,
+          18
+        ]
+      ]
+    },
+    {
+      "accuracy": 0.95,
+      "precision": 0.95,
+      "recall": 0.95,
+      "f1": 0.95,
+      "confusion_matrix": [
+        [
+          19,
+          1
+        ],
+        [
+          1,
+          19
+        ]
+      ]
+    },
+    {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "confusion_matrix": [
+        [
+          20,
+          0
+        ],
+        [
+          0,
+          20
+        ]
+      ]
+    },
+    {
+      "accuracy": 0.975,
+      "precision": 0.9523809523809523,
+      "recall": 1.0,
+      "f1": 0.975609756097561,
+      "confusion_matrix": [
+        [
+          19,
+          1
+        ],
+        [
+          0,
+          20
+        ]
+      ]
+    }
+  ],
+  "summary": {
+    "accuracy": {
+      "mean": 0.975,
+      "std": 0.022360679774997918
+    },
+    "precision": {
+      "mean": 0.9804761904761905,
+      "std": 0.02392353654681997
+    },
+    "recall": {
+      "mean": 0.97,
+      "std": 0.039999999999999994
+    },
+    "f1": {
+      "mean": 0.9745956354300385,
+      "std": 0.022969799320394467
+    }
+  }
+}
