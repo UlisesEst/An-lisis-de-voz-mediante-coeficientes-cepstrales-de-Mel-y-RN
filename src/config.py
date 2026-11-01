@@ -1,11 +1,10 @@
 """
 Configuración centralizada del proyecto.
 
-Los valores por defecto de AudioConfig provienen de:
-Ramos-Aguilar et al. (2025), "Automatic Phonetic Segmentation of the
-Yuhmu Language Using Mel Scale Spectral Parameters".
-Son el punto de partida validado para Yuhmu; para otros idiomas pueden
-ajustarse desde la interfaz o desde la línea de comandos.
+Los valores por defecto de AudioConfig y SegmentationConfig provienen de
+parámetros estándar de análisis espectral de habla (16 kHz, ventana Hanning
+de 20 ms, 75% de traslape, 40 bandas Mel) y pueden ajustarse libremente
+desde la interfaz de escritorio o desde la línea de comandos.
 """
 
 from dataclasses import asdict, dataclass, fields
@@ -84,15 +83,23 @@ class SegmentationConfig:
     """Parámetros de la segmentación espectral por distancia coseno.
     Todos los parámetros temporales están en milisegundos para que el
     comportamiento no dependa del sample rate ni del salto configurados.
-    Los valores por defecto se calibraron visualmente sobre el corpus de
-    Yuhmu partiendo de criterios de fonética general; para otros corpus
-    pueden ajustarse desde la interfaz."""
-    silence_db: float = 25.0       # frames este número de dB bajo el pico = silencio (calibrado en Yuhmu)
+    Pueden ajustarse visualmente para cualquier corpus desde la interfaz."""
+    silence_db: float = 25.0       # frames este número de dB bajo el pico = silencio
     context_ms: float = 20.0       # ventana antes/después de cada instante que se compara
     smoothing_ms: float = 15.0     # ancho del promedio móvil sobre la curva de novedad
     threshold_k: float = 3.0       # frontera = pico > mediana + k * MAD (regla de valores atípicos)
     min_novelty: float = 0.08      # piso absoluto de distancia coseno (evita fronteras en sonidos estables)
     min_segment_ms: float = 40.0   # separación mínima entre fronteras
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SegmentationConfig":
+        if not d:
+            return cls()
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
 
 
 @dataclass
@@ -104,6 +111,16 @@ class ModelConfig:
     dropout: float = 0.2
     max_seq_len: int = 500  # mínimo; se amplía según la duración real de los audios
 
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ModelConfig":
+        if not d:
+            return cls()
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
+
 
 @dataclass
 class TrainConfig:
@@ -113,6 +130,19 @@ class TrainConfig:
     k_folds: int = 5
     seed: int = 42
     device: str = "cuda"  # se ajusta en tiempo de ejecución si no hay GPU
+    use_spec_augment: bool = False
+    freq_mask_param: int = 8
+    time_mask_param: int = 20
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "TrainConfig":
+        if not d:
+            return cls()
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
 
 
 AUDIO = AudioConfig()

@@ -10,26 +10,36 @@ vectores de dimensión `input_dim`, ya sean frames del Mel-spectrograma
 import torch
 import torch.nn as nn
 
-from src.config import AUDIO, MODEL
+from src.config import AUDIO, MODEL, ModelConfig
 
 
 class PronunciationTransformer(nn.Module):
-    def __init__(self, input_dim: int = AUDIO.n_mels, max_seq_len: int = MODEL.max_seq_len):
+    def __init__(
+        self,
+        input_dim: int = AUDIO.n_mels,
+        max_seq_len: int = None,
+        model_cfg: ModelConfig = MODEL,
+    ):
         super().__init__()
-        self.proyeccion = nn.Linear(input_dim, MODEL.d_model)
+        max_seq_len = max_seq_len or model_cfg.max_seq_len
+        self.input_dim = input_dim
+        self.max_seq_len = max_seq_len
+        self.model_cfg = model_cfg
+
+        self.proyeccion = nn.Linear(input_dim, model_cfg.d_model)
         self.pos_encoding = nn.Parameter(
-            torch.randn(1, max_seq_len, MODEL.d_model) * 0.02
+            torch.randn(1, max_seq_len, model_cfg.d_model) * 0.02
         )
 
         capa = nn.TransformerEncoderLayer(
-            d_model=MODEL.d_model,
-            nhead=MODEL.nhead,
-            dim_feedforward=MODEL.dim_feedforward,
-            dropout=MODEL.dropout,
+            d_model=model_cfg.d_model,
+            nhead=model_cfg.nhead,
+            dim_feedforward=model_cfg.dim_feedforward,
+            dropout=model_cfg.dropout,
             batch_first=True,
         )
-        self.encoder = nn.TransformerEncoder(capa, num_layers=MODEL.num_layers)
-        self.clasificador = nn.Linear(MODEL.d_model, 1)
+        self.encoder = nn.TransformerEncoder(capa, num_layers=model_cfg.num_layers)
+        self.clasificador = nn.Linear(model_cfg.d_model, 1)
 
     def forward(self, x: torch.Tensor, padding_mask: torch.Tensor = None) -> torch.Tensor:
         """
