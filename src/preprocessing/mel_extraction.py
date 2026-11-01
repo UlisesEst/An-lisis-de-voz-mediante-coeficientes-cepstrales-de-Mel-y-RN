@@ -2,7 +2,7 @@
 Extracción de Mel-spectrograma parametrizable.
 
 Todas las funciones reciben un AudioConfig; si no se indica, usan los
-valores por defecto validados para Yuhmu.
+valores por defecto de configuración acústica.
 """
 
 import soundfile as sf

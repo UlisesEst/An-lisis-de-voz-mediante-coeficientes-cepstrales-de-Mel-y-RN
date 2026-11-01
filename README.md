@@ -1,28 +1,28 @@
-# Clasificación de pronunciación en Yuhmu con Transformer
+# Clasificación Binaria de Audio y Pronunciación con Transformers — Audio ML Studio
 
-Proyecto universitario: clasificación binaria (**pronunciación correcta = 1** / **incorrecta = 0**) de palabras en **Yuhmu** (variante del otomí de Ixtenco, lengua en peligro de extinción), utilizando el corpus **Zetzoho-Yuhmu-Speech-Dataset** (*Ramos-Aguilar et al.*), compuesto por **200 audios** (`100` en `data/raw/correct/*.wav` y `100` en `data/raw/incorrect/*.wav`).
+Plataforma local de escritorio para el análisis acústico, la segmentación fonética/espectral no supervisada y el entrenamiento e inferencia de modelos de aprendizaje profundo (**Transformers** y **Wav2Vec2**) aplicados a la **clasificación binaria de grabaciones de voz y audio** (`Clase 1 = Correcto` / `Clase 0 = Incorrecto`).
 
 El proyecto explora y compara distintas representaciones acústicas y arquitecturas:
 1. **Transformer Encoder entrenado desde cero** (`PronunciationTransformer`) sobre dos tipos de secuencia:
-   - **Por frames (`frames`)**: Secuencia de frames del Mel-spectrograma normalizado (`input_dim = n_mels = 40`).
-   - **Por segmentos fonéticos (`segments`)**: Secuencia de unidades tipo fonema obtenidas mediante segmentación espectral no supervisada (`input_dim = 2 * n_mels + 1 = 81`).
-2. **Fine-tuning de un modelo preentrenado de habla** (`Wav2Vec2Classifier`, basado en `facebook/wav2vec2-base`) sobre forma de onda cruda (en fase de integración).
+   - **Por frames (`frames`)**: Secuencia de frames del Mel-spectrograma normalizado (`input_dim = n_mels`).
+   - **Por segmentos fonéticos/acústicos (`segments`)**: Secuencia de unidades obtenidas mediante segmentación espectral no supervisada por distancia coseno (`input_dim = 2 * n_mels + 1`).
+2. **Fine-tuning de un modelo preentrenado de habla** (`Wav2Vec2Classifier`, basado en `facebook/wav2vec2-base`) sobre forma de onda cruda.
+
+> 📖 **¿Buscas el manual paso a paso de la interfaz?** Consulta la **[Guía de Uso Completa (`GUIA_DE_USO.md`)](GUIA_DE_USO.md)**.
 
 ---
 
-## Dataset y Parámetros Base
+## Parámetros Espectrales Base
 
-- **Corpus**: *Zetzoho-Yuhmu-Speech-Dataset* (Ramos-Aguilar et al.): 200 audios crudos (100 correctos + 100 incorrectos).
-- **Parámetros de extracción Mel**: Tomados de Ramos-Aguilar et al. (2025), *Automatic Phonetic Segmentation of the Yuhmu Language Using Mel Scale Spectral Parameters* (IEEE LATAM Trans.):
-  - Frecuencia de muestreo: `16,000 Hz`
-  - Ventana Hanning: `20 ms` (`320` muestras)
-  - Overlap: `75%` (salto de `80` muestras / `5 ms`, `200 frames/s`)
-  - `n_fft`: `512`
-  - Filtros Mel: `40` bandas
+- **Frecuencia de muestreo por defecto**: `16,000 Hz` (configurable a `8,000`, `16,000`, `22,050` o `44,100 Hz`)
+- **Ventana Hanning**: `20 ms` (`320` muestras a `16 kHz`)
+- **Overlap**: `75%` (salto de `80` muestras / `5 ms`, `200 frames/s`)
+- **`n_fft`**: `512` (siguiente potencia de 2 respecto a `win_length`)
+- **Filtros Mel**: `40` bandas (configurable de `10` a `128`)
 
 ---
 
-## Instalación y Setup
+## Instalación y Ejecución
 
 ```bash
 python -m venv .venv
@@ -30,10 +30,15 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Coloca los audios en:
-```text
-data/raw/correct/*.wav
-data/raw/incorrect/*.wav
+### Ejecutar como Aplicación de Escritorio Local
+En Windows, haz doble clic en `Iniciar_Audio_ML_Studio.bat` o ejecuta:
+```bash
+python desktop_app.py
+```
+
+### Ejecutar en Navegador Web (Streamlit)
+```bash
+streamlit run app.py
 ```
 
 ---
@@ -41,8 +46,11 @@ data/raw/incorrect/*.wav
 ## Estructura del Proyecto
 
 ```text
-├── app.py                         # Interfaz interactiva en Streamlit
-├── data/raw/                      # Audios .wav (correct/ e incorrect/)
+├── app.py                         # Interfaz interactiva principal (8 módulos)
+├── desktop_app.py                 # Lanzador de aplicación de escritorio en ventana nativa
+├── Iniciar_Audio_ML_Studio.bat    # Acceso directo de doble clic para Windows
+├── GUIA_DE_USO.md                 # Manual y guía de uso paso a paso de la aplicación
+├── models/                        # Paquetes de modelos entrenados (.pt + .json)
 ├── results/                       # Registros JSON de corridas k-fold
 └── src/
     ├── config.py                  # Hiperparámetros y configuración centralizada
@@ -51,13 +59,16 @@ data/raw/incorrect/*.wav
     │   ├── segmentation.py        # Segmentación espectral no supervisada por distancia coseno
     │   └── augmentation.py        # SpecAugment (máscaras de tiempo y frecuencia)
     ├── datasets/
-    │   └── yuhmu_dataset.py       # Datasets (frames y segmentos) + collate_fn con padding
+    │   └── yuhmu_dataset.py       # Datasets de doble fuente (frames, segmentos, waveform) + collate_fn
     ├── models/
     │   ├── transformer_scratch.py # Transformer encoder entrenado desde cero
-    │   └── wav2vec_finetune.py    # Clasificador con Wav2Vec2 preentrenado
+    │   ├── wav2vec_finetune.py    # Clasificador con Wav2Vec2 preentrenado
+    │   └── checkpoint.py          # Guardado y carga de modelos entrenados (.pt + .json)
+    ├── inference/
+    │   └── predictor.py           # Inferencia sobre audios individuales o lotes .wav
     ├── training/
-    │   ├── train.py               # Script principal de entrenamiento y registro de métricas
-    │   ├── cross_validation.py    # Validación cruzada estratificada (5-fold)
+    │   ├── train.py               # Script y funciones de entrenamiento y exportación de modelos
+    │   ├── cross_validation.py    # Validación cruzada estratificada (k-fold)
     │   ├── diagnose_duration.py   # Diagnóstico de atajo por duración del audio
     │   ├── diagnose_segments.py   # Diagnóstico de atajo por número de segmentos y duración
     │   └── permutation_test.py    # Test de permutación de etiquetas contra data leakage
@@ -72,69 +83,40 @@ data/raw/incorrect/*.wav
 ### 1. Configuración Centralizada (`src/config.py`)
 - **`AudioConfig`**: Parámetros espectrales (`sample_rate = 16000`, `n_mels = 40`, `win_length_ms = 20.0`, `overlap = 0.75`) y validación automática (`validate()`).
 - **`SegmentationConfig`**: Parámetros en milisegundos independientes del sample rate (`silence_db = 25.0`, `context_ms = 20.0`, `smoothing_ms = 15.0`, `threshold_k = 3.0`, `min_novelty = 0.08`, `min_segment_ms = 40.0`).
-- **`ModelConfig`**: Transformer ligero (`d_model = 64`, `nhead = 4`, `num_layers = 2`, `dim_feedforward = 128`, `dropout = 0.2`, `max_seq_len = 500`).
-- **`TrainConfig`**: `batch_size = 8`, `lr = 1e-3`, `epochs = 50`, `k_folds = 5`, `seed = 42`.
+- **`ModelConfig`**: Transformer parametrizable (`d_model = 64`, `nhead = 4`, `num_layers = 2`, `dim_feedforward = 128`, `dropout = 0.2`, `max_seq_len = 500`).
+- **`TrainConfig`**: `batch_size = 8`, `lr = 1e-3`, `epochs = 50`, `k_folds = 5`, `seed = 42`, e integración opcional de `SpecAugment`.
 
 ### 2. Preprocesamiento (`src/preprocessing/`)
 - **`mel_extraction.py`**: Carga en mono y remuestreo (`load_waveform()`), cálculo de Mel-spectrograma en dB (`compute_mel_db()`) y normalización por muestra ($\mu=0, \sigma=1$) transpuesta a `(tiempo, n_mels)` (`normalize_mel()`).
 - **`segmentation.py`**: Segmentación fonética sin transcripción (`segment()`). Recorta el silencio inicial/final (`voiced_region()`), calcula la novedad espectral por distancia coseno entre ventanas adyacentes (`window_novelty()`) y detecta fronteras con un umbral adaptativo robusto ($\text{mediana} + k \cdot \text{MAD}$ con piso absoluto `min_novelty`). Cada segmento se resume mediante `segment_features()` en un vector de dimensión `2 * n_mels + 1` (media espectral, desviación estándar y log-duración relativa a 100 ms).
-- **`augmentation.py`**: Implementa `SpecAugment` sobre el Mel-spectrograma.
+- **`augmentation.py`**: Implementa `SpecAugment` sobre el Mel-spectrograma exclusivamente en el subconjunto de entrenamiento.
 
-### 3. Datasets y Modelos (`src/datasets/` y `src/models/`)
+### 3. Datasets, Modelos e Inferencia (`src/datasets/`, `src/models/`, `src/inference/`)
 - **`yuhmu_dataset.py`**:
+  - Soporta dos fuentes independientes de audio (`correct_source` e `incorrect_source`) mediante `resolve_audio_sources()`.
   - `YuhmuPronunciationDataset`: Secuencia de frames `(tiempo, n_mels)`.
   - `SegmentedPronunciationDataset`: Secuencia de segmentos `(n_segmentos, 2 * n_mels + 1)`.
+  - `WaveformPronunciationDataset`: Forma de onda cruda normalizada `(muestras,)` para `Wav2Vec2Classifier`.
   - `collate_fn()`: Padding dinámico por lote y máscara booleana `src_key_padding_mask` (`True` en posiciones de padding).
-- **`transformer_scratch.py`**: `PronunciationTransformer` con proyección lineal a `d_model`, *positional encoding* aprendible, `TransformerEncoder`, *mean pooling* enmascarado (ignorando el padding) y clasificador lineal binario.
+- **`transformer_scratch.py`**: `PronunciationTransformer` con proyección lineal a `d_model`, *positional encoding* aprendible, `TransformerEncoder`, *mean pooling* enmascarado y clasificador lineal binario.
+- **`wav2vec_finetune.py`**: `Wav2Vec2Classifier` con soporte para congelar el encoder base y *mean pooling* enmascarado sobre los frames válidos.
+- **`checkpoint.py` y `predictor.py`**: Empaquetado de pesos y metadatos en archivos `.pt` + `.json`, reconstrucción automática de modelos y evaluación de nuevos archivos `.wav`.
 
-### 4. Entrenamiento, Diagnóstico y Evaluación (`src/training/` y `src/evaluation/`)
-- **Entrenamiento (`train.py` y `cross_validation.py`)**: Validación cruzada estratificada (`StratifiedKFold`, 5 folds) con `BCEWithLogitsLoss` y `Adam`:
-  ```bash
-  # Entrenar sobre frames del Mel-spectrograma
-  python -m src.training.train --representation frames
+### 4. Uso por Línea de Comandos (Opcional)
 
-  # Entrenar sobre segmentos fonéticos
-  python -m src.training.train --representation segments
-  ```
-- **Diagnósticos y controles de calidad**:
-  ```bash
-  # Evaluar clasificador trivial basado solo en duración
-  python -m src.training.diagnose_duration
+Además de la interfaz de escritorio, todos los módulos pueden ejecutarse desde la terminal:
 
-  # Evaluar clasificador trivial basado en número de segmentos y/o duración
-  python -m src.training.diagnose_segments
-
-  # Test de permutación (etiquetas aleatorias) para descartar fuga de datos
-  python -m src.training.permutation_test --representation frames
-  python -m src.training.permutation_test --representation segments
-  ```
-
-### 5. Interfaz Interactiva (`app.py`)
-Aplicación en **Streamlit** para explorar el preprocesamiento y calibrar parámetros en tiempo real:
 ```bash
-streamlit run app.py
+# Entrenar sobre frames, segmentos o wav2vec2 y guardar el modelo entrenado (.pt)
+python -m src.training.train --representation frames --save-model models/modelo_frames.pt
+python -m src.training.train --representation segments --save-model models/modelo_segments.pt
+python -m src.training.train --representation wav2vec2 --save-model models/modelo_wav2vec2.pt
+
+# Entrenar indicando dos carpetas personalizadas
+python -m src.training.train --representation frames --correct-dir ruta/correctos --incorrect-dir ruta/incorrectos
+
+# Diagnósticos de sesgo y test de permutación
+python -m src.training.diagnose_duration
+python -m src.training.diagnose_segments
+python -m src.training.permutation_test --representation frames
 ```
-Cuenta con 4 vistas:
-1. **Vista general del dataset**: Conteo por clase e histograma/estadísticas de duración en frames.
-2. **Explorar audio individual**: Reproductor de audio, forma de onda y Mel-spectrograma.
-3. **Comparar correcto vs incorrecto**: Comparación visual y auditiva lado a lado.
-4. **Segmentación espectral**: Visualización de fronteras detectadas, curva de distancia coseno, umbral adaptativo y análisis de plausibilidad fonética (`30–200 ms`) en los 200 audios.
-
----
-
-## Resultados Experimentales (5-Fold Cross-Validation)
-
-| Representación | Accuracy | Precision | Recall | F1-Score | Registro |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Frames (`frames`)** | `98.50% ± 1.22%` | `98.10% ± 2.33%` | `99.00% ± 2.00%` | `98.51% ± 1.22%` | `results/run_frames_20261002_232726.json` |
-| **Segmentos (`segments`)** | `96.00% ± 2.00%` | `95.19% ± 3.01%` | `97.00% ± 2.45%` | `96.05% ± 1.95%` | `results/run_segments_20261002_233542.json` |
-
----
-
-## Próximos Pasos / Pendientes
-
-- [x] Validar carga de los 200 audios con `mel_extraction.py`
-- [x] Correr `cross_validation.py` con `PronunciationTransformer` (representación por `frames` y por `segments`)
-- [ ] Implementar `Dataset` y `collate_fn` de waveform crudo para `Wav2Vec2Classifier` y comparar métricas
-- [ ] Integrar `SpecAugment` en el split de entrenamiento dentro de `cross_validation.py`
-- [ ] Actualizar `requirements.txt` con las dependencias adicionales usadas en el proyecto (`soundfile`, `scipy`, `streamlit`)
